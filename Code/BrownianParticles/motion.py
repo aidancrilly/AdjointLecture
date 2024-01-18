@@ -3,7 +3,7 @@ import jax.random as jrandom
 import jax.numpy as jnp
 from diffrax import diffeqsolve, ControlTerm, Euler, MultiTerm, ODETerm, SaveAt, VirtualBrownianTree
 
-def ParticleSwarmSolver(damping,noise,key,ts,Nparticles):
+def ParticleSwarmSolver(damping,noise,key,ts,pos_bins,Nparticles):
 
     def drift(t,p,args):
         r,v = p
@@ -33,6 +33,10 @@ def ParticleSwarmSolver(damping,noise,key,ts,Nparticles):
     keys = jrandom.split(key,Nparticles)
     ys = vmap_solver(ts,y0,keys)
 
-    return ys
+    t_histogram = jax.vmap(lambda a : jnp.histogram(a,bins=pos_bins)[0],in_axes=(1,))
 
-vmapped_ParticleSwarmSolver = jax.vmap(ParticleSwarmSolver,in_axes=(0,0,0,None,None))
+    counts = t_histogram(ys[:,:,0])/Nparticles
+
+    return counts
+
+vmapped_ParticleSwarmSolver = jax.vmap(ParticleSwarmSolver,in_axes=(0,0,0,None,None,None))
